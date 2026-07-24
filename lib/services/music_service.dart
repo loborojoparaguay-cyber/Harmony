@@ -756,6 +756,65 @@ class MusicServices extends getx.GetxService {
       }
     }
 
+    // Fallback: YT Music sometimes stops including "Songs"/"Videos" inside
+    // the mixed top results shelf, while playlists/albums/artists still show
+    // up there (or via the chip-injection above). When that happens, issue
+    // a dedicated filtered search for the missing category - the same
+    // strategy other actively-maintained YT Music clients use - instead of
+    // relying solely on the mixed shelf.
+    if (filter == null) {
+      final chipParams = searchResults['searchEndpoint'] as Map?;
+      for (final catName in ['Songs', 'Videos']) {
+        final hasResults = searchResults[catName] is List &&
+            (searchResults[catName] as List).isNotEmpty;
+        if (hasResults) continue;
+
+        final catFilter = catName == 'Songs' ? 'songs' : 'videos';
+        final chipFilterParams = chipParams?[catName] as String?;
+        final fallbackParams =
+            chipFilterParams ?? getSearchParams(catFilter, null, false);
+
+        if (fallbackParams == null) continue;
+
+        try {
+          final filteredData = Map.of(_context);
+          filteredData['context']['client']['hl'] = 'en';
+          filteredData['query'] = query;
+          filteredData['params'] = fallbackParams;
+
+          final filteredResponse =
+              (await _sendRequest('search', filteredData)).data;
+          dynamic filteredContents = filteredResponse['contents'];
+          if (filteredContents != null &&
+              (filteredContents as Map)
+                  .containsKey('tabbedSearchResultsRenderer')) {
+            filteredContents = filteredContents['tabbedSearchResultsRenderer']
+                ['tabs'][0]['tabRenderer']['content'];
+          }
+          filteredContents =
+              nav(filteredContents, ['sectionListRenderer', 'contents']);
+
+          final List<dynamic> categoryItems = [];
+          if (filteredContents is List) {
+            for (var filteredRes in filteredContents) {
+              if (filteredRes['musicShelfRenderer'] != null) {
+                categoryItems.addAll(parseSearchResults(
+                    filteredRes['musicShelfRenderer']['contents'],
+                    ['artist', 'playlist', 'song', 'video', 'station'],
+                    catFilter.substring(0, catFilter.length - 1),
+                    catName));
+              }
+            }
+          }
+          if (categoryItems.isNotEmpty) {
+            searchResults[catName] = categoryItems;
+          }
+        } catch (e) {
+          printERROR("Fallback filtered search for $catName failed: $e");
+        }
+      }
+    }
+
     return searchResults;
   }
 
