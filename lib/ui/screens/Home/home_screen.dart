@@ -126,6 +126,44 @@ class Body extends StatelessWidget {
         padding: EdgeInsets.only(left: leftPadding),
         child: Stack(
           children: [
+            Align(
+              alignment: Alignment.topLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 10.0, left: 5),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(50),
+                      child: Image.asset(
+                        'assets/icons/icon.png',
+                        height: 36,
+                        width: 36,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "Harmony Music",
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        Text(
+                          "Version LoborojoPy",
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
             GestureDetector(
               onTap: () {
                 // for Desktop search bar
@@ -142,13 +180,6 @@ class Body extends StatelessWidget {
                         height: MediaQuery.of(context).size.height - 180,
                         child: Column(
                           children: [
-                            Align(
-                              alignment: Alignment.topLeft,
-                              child: Text(
-                                "home".tr,
-                                style: Theme.of(context).textTheme.titleLarge,
-                              ),
-                            ),
                             Expanded(
                               child: Center(
                                 child: Column(
