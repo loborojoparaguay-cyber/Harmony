@@ -662,7 +662,7 @@ class SettingsScreen extends StatelessWidget {
                     contentPadding: const EdgeInsets.only(left: 5, right: 10),
                     title: Text("github".tr),
                     subtitle: Text(
-                      "${"githubDes".tr}${((Get.find<PlayerController>().playerPanelMinHeight.value) == 0 || !isBottomNavActive) ? "" : "\n\n${settingsController.currentVersion} ${"by".tr} anandnet"}",
+                      "${"githubDes".tr}${((Get.find<PlayerController>().playerPanelMinHeight.value) == 0 || !isBottomNavActive) ? "" : "\n\n${settingsController.currentVersion} ${"by".tr} LoborojoPy"}",
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     isThreeLine: true,
@@ -695,7 +695,7 @@ class SettingsScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 20.0),
             child: Text(
-              "${settingsController.currentVersion} ${"by".tr} anandnet",
+              "${settingsController.currentVersion} ${"by".tr} LoborojoPy",
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
