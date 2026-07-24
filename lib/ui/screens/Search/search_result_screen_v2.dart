@@ -63,6 +63,41 @@ class SearchResultScreenBN extends StatelessWidget {
                 child: Obx(
                   () {
                     if (searchResScrController.isResultContentFetced.isTrue &&
+                        searchResScrController.hasError.isTrue) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "networkError1".tr,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 15, vertical: 10),
+                              decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge!
+                                      .color,
+                                  borderRadius: BorderRadius.circular(10)),
+                              child: InkWell(
+                                onTap: () {
+                                  searchResScrController.retrySearch();
+                                },
+                                child: Text(
+                                  "retry".tr,
+                                  style: TextStyle(
+                                      color: Theme.of(context).canvasColor),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else if (searchResScrController
+                            .isResultContentFetced.isTrue &&
                         searchResScrController.railItems.isEmpty) {
                       return Center(
                         child: Column(

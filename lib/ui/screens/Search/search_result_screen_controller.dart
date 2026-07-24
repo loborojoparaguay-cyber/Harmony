@@ -11,6 +11,7 @@ class SearchResultScreenController extends GetxController
     with GetTickerProviderStateMixin {
   final navigationRailCurrentIndex = 0.obs;
   final isResultContentFetced = false.obs;
+  final hasError = false.obs;
   final isSeparatedResultContentFetced = false.obs;
   final resultContent = <String, dynamic>{}.obs;
   final separatedResultContent = <String, dynamic>{}.obs;
@@ -91,12 +92,27 @@ class SearchResultScreenController extends GetxController
     onDestinationSelected(railItems.indexOf(text) + 1);
   }
 
+  Future<void> retrySearch() async {
+    await _getInitSearchResult();
+  }
+
   Future<void> _getInitSearchResult() async {
     isResultContentFetced.value = false;
+    hasError.value = false;
     final args = Get.arguments;
     if (args != null) {
       queryString.value = args;
-      resultContent.value = await musicServices.search(args);
+      try {
+        resultContent.value = await musicServices.search(args);
+      } catch (e, st) {
+        // Catch-all so the search screen doesn't hang forever showing only
+        // the shimmer/loading indicator when the YT Music API response
+        // format changes or the request otherwise fails unexpectedly.
+        printERROR("Search failed for '$args': $e\n$st");
+        hasError.value = true;
+        isResultContentFetced.value = true;
+        return;
+      }
       final allKeys = resultContent.keys.where((element) => ([
             "Songs",
             "Videos",

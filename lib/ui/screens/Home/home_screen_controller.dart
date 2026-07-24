@@ -172,6 +172,13 @@ class HomeScreenController extends GetxController {
       printERROR("Home Content not loaded due to ${r.message}");
       await Future.delayed(const Duration(seconds: 1));
       networkError.value = !silent;
+    } catch (e, st) {
+      // Catch-all for unexpected parsing/format errors (e.g. YT Music API
+      // response structure changes) so the UI doesn't hang on the shimmer
+      // forever without any feedback.
+      printERROR("Home Content not loaded due to unexpected error: $e\n$st");
+      await Future.delayed(const Duration(seconds: 1));
+      networkError.value = !silent;
     }
   }
 
