@@ -91,7 +91,7 @@ class MusicServices extends getx.GetxService {
     _context['context']['client']['hl'] = code;
   }
 
-  Future<String?> genrateVisitorId() async {
+  Future<String?> genrateVisitorId({int retryCount = 0}) async {
     try {
       final response =
           await dio.get(domain, options: Options(headers: _headers));
@@ -102,14 +102,25 @@ class MusicServices extends getx.GetxService {
         final ytcfg = json.decode(matches.group(1).toString());
         visitorId = ytcfg['VISITOR_DATA']?.toString();
       }
+      if (visitorId == null && retryCount < 2) {
+        // Transient failure fetching/parsing the visitor id page - retry a
+        // couple of times before giving up and falling back to the default.
+        await Future.delayed(Duration(milliseconds: 500 * (retryCount + 1)));
+        return genrateVisitorId(retryCount: retryCount + 1);
+      }
       return visitorId;
     } catch (e) {
+      if (retryCount < 2) {
+        await Future.delayed(Duration(milliseconds: 500 * (retryCount + 1)));
+        return genrateVisitorId(retryCount: retryCount + 1);
+      }
+      printERROR("Failed to generate visitor id: $e");
       return null;
     }
   }
 
   Future<Response> _sendRequest(String action, Map<dynamic, dynamic> data,
-      {additionalParams = ""}) async {
+      {additionalParams = "", int retryCount = 0}) async {
     //print("$baseUrl$action$fixedParms$additionalParams          data:$data");
     try {
       final response =
@@ -121,10 +132,26 @@ class MusicServices extends getx.GetxService {
 
       if (response.statusCode == 200) {
         return response;
+      } else if (retryCount < 2) {
+        // Transient non-200 response (e.g. brief throttling) - retry a
+        // couple of times with a short delay instead of looping forever.
+        await Future.delayed(Duration(milliseconds: 500 * (retryCount + 1)));
+        return _sendRequest(action, data,
+            additionalParams: additionalParams, retryCount: retryCount + 1);
       } else {
-        return _sendRequest(action, data, additionalParams: additionalParams);
+        printERROR(
+            "Request '$action' failed after retries with status ${response.statusCode}");
+        throw NetworkError();
       }
     } on DioException catch (e) {
+      if (retryCount < 2) {
+        // Retry transient connection errors (timeouts, temporary blocks)
+        // before giving up.
+        printINFO("Error $e - retrying ($retryCount)");
+        await Future.delayed(Duration(milliseconds: 500 * (retryCount + 1)));
+        return _sendRequest(action, data,
+            additionalParams: additionalParams, retryCount: retryCount + 1);
+      }
       printINFO("Error $e");
       throw NetworkError();
     }
