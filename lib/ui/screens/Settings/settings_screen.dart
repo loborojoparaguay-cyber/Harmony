@@ -57,7 +57,7 @@ class SettingsScreen extends StatelessWidget {
                             onTap: () {
                               launchUrl(
                                 Uri.parse(
-                                  'https://github.com/anandnet/Harmony-Music/releases/latest',
+                                  'https://github.com/loborojoparaguay-cyber/Harmony/releases/latest',
                                 ),
                                 mode: LaunchMode.externalApplication,
                               );
@@ -669,7 +669,7 @@ class SettingsScreen extends StatelessWidget {
                     onTap: () {
                       launchUrl(
                         Uri.parse(
-                          'https://github.com/anandnet/Harmony-Music',
+                          'https://github.com/loborojoparaguay-cyber/Harmony',
                         ),
                         mode: LaunchMode.externalApplication,
                       );
