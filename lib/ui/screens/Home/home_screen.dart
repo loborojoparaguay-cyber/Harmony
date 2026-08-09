@@ -17,6 +17,9 @@ import '../../widgets/quickpickswidget.dart';
 import '../../widgets/shimmer_widgets/home_shimmer.dart';
 import 'home_screen_controller.dart';
 import '../Settings/settings_screen.dart';
+import '../pantalla_radios.dart';
+import '../pantalla_musica_exclusiva.dart';
+
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
