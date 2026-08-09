@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../servicios/servicio_musical_exclusivo.dart';
+import 'servicio_musical_exclusivo.dart';
 
 class PantallaMusicaExclusiva extends StatefulWidget {
   final Function(String streamUrl, String title) alReproducirCancion;
