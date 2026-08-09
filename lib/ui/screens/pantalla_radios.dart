@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../modelos/radio_station.dart';
+import '../../models/radio_station.dart';
 
 class PantallaRadios extends StatelessWidget {
   final Function(String url, String title) alReproducirRadio;
