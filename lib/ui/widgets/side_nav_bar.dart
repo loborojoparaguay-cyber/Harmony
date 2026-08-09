@@ -46,6 +46,9 @@ class SideNavBar extends StatelessWidget {
                           "albums".tr, isMobileOrTabScreen, Icons.album),
                       railDestination(
                           "artists".tr, isMobileOrTabScreen, Icons.people),
+                      railDestination("Radios".tr, isMobileOrTabScreen, Icons.radio_rounded),
+railDestination("Exclusivas".tr, isMobileOrTabScreen, Icons.star_rounded),
+
                       //railDestination("Settings")
                       const NavigationRailDestination(
                         padding: EdgeInsets.only(top: 10, bottom: 10),
