@@ -124,7 +124,24 @@ class Body extends StatelessWidget {
                 : 85.0;
     final leftPadding =
         settingsScreenController.isBottomNavBarEnabled.isTrue ? 20.0 : 5.0;
-    if (homeScreenController.tabIndex.value == 0) {
+    if (homeScreenController.tabIndex.value == 5) {
+  return PantallaRadios(
+    alReproducirRadio: (url, titulo) {
+      // Lógica de reproducción
+    },
+  );
+}
+
+if (homeScreenController.tabIndex.value == 6) {
+  return PantallaMusicaExclusiva(
+    alReproducirCancion: (streamUrl, titulo) {
+      // Lógica de reproducción
+    },
+  );
+}
+
+if (homeScreenController.tabIndex.value == 0) {
+  
       return Padding(
         padding: EdgeInsets.only(left: leftPadding),
         child: Stack(
