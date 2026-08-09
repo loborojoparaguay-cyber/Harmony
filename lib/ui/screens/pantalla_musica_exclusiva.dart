@@ -1,4 +1,4 @@
-import 'package0:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'servicio_musical_exclusivo.dart';
 
 class PantallaMusicaExclusiva extends StatefulWidget {
