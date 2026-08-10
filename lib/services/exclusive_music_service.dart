@@ -23,8 +23,7 @@ class DriveSong {
 
 class ExclusiveMusicService {
   // Conexión directa con tu VPS
-  static const String baseUrl = 'http://music.loborojo.store:3000/api/drive/music';
-
+  static const String baseUrl = 'https://music.loborojo.store/api/drive/music';
 
   static Future<List<DriveSong>> fetchExclusiveSongs() async {
     try {
