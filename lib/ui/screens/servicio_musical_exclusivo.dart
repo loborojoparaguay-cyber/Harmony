@@ -2,15 +2,25 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class DriveSong {
+  final String id;
   final String title;
+  final String folderName;
   final String streamUrl;
 
-  DriveSong({required this.title, required this.streamUrl});
+  DriveSong({
+    required this.id,
+    required this.title,
+    required this.folderName,
+    required this.streamUrl,
+  });
 
   factory DriveSong.fromJson(Map<String, dynamic> json) {
+    final fileId = json['id'] ?? '';
     return DriveSong(
+      id: fileId,
       title: json['title'] ?? json['name'] ?? 'Sin título',
-      streamUrl: json['streamUrl'] ?? json['webContentLink'] ?? json['url'] ?? '',
+      folderName: json['folderName'] ?? json['album'] ?? 'Carpeta Principal',
+      streamUrl: 'http://128.254.190.44:3000/api/drive/stream/$fileId',
     );
   }
 }
@@ -27,7 +37,7 @@ class ExclusiveMusicService {
         return songsList.map((dynamic item) => DriveSong.fromJson(item)).toList();
       }
     } catch (e) {
-      // Manejo de error silencioso
+      // Error de red
     }
     return [];
   }
