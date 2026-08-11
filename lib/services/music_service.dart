@@ -330,6 +330,20 @@ class MusicServices extends getx.GetxService {
       tracks.addAll(List<dynamic>.from(x[0]));
     }
 
+    // Validación de seguridad para que la cola nunca quede vacía
+if (tracks.isEmpty && videoId.isNotEmpty) {
+  try {
+    final relatedContent = await getContentRelatedToSong(videoId, hlCode);
+    for (var item in relatedContent) {
+      if (item is MediaItem) {
+        tracks.add(item);
+      }
+    }
+  } catch (e) {
+    printERROR("Error al generar cola de respaldo: $e");
+  }
+}
+
     return {
       'tracks': tracks,
       'playlistId': playlist,
