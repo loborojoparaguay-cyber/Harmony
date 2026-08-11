@@ -333,7 +333,7 @@ class MusicServices extends getx.GetxService {
     // Validación de seguridad para que la cola nunca quede vacía
 if (tracks.isEmpty && videoId.isNotEmpty) {
   try {
-    final relatedContent = await getContentRelatedToSong(videoId, hlCode);
+    final relatedContent = await getContentRelatedToSong(videoId, _context['context']['client']['hl'] ?? "en");
     for (var item in relatedContent) {
       if (item is MediaItem) {
         tracks.add(item);
