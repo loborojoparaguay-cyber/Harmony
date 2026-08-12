@@ -20,7 +20,7 @@ class DriveSong {
       id: fileId,
       title: json['title'] ?? json['name'] ?? 'Sin título',
       folderName: json['folderName'] ?? json['album'] ?? 'Carpeta Principal',
-      streamUrl: 'http://128.254.190.44:3000/api/drive/stream/$fileId',
+      streamUrl: 'https://loborojopy.shop/api/drive/stream/$fileId',
     );
   }
 }
@@ -29,7 +29,7 @@ class ExclusiveMusicService {
   static Future<List<DriveSong>> fetchExclusiveSongs() async {
     try {
       final response = await http.get(
-        Uri.parse('http://128.254.190.44:3000/api/drive/music'),
+        Uri.parse('https://loborojopy.shop/api/drive/music'),
       );
       if (response.statusCode == 200) {
         Map<String, dynamic> data = jsonDecode(response.body);
