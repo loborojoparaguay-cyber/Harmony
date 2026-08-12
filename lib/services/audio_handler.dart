@@ -776,6 +776,24 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
   Future<HMStreamingData> checkNGetUrl(String songId,
       {bool generateNewUrl = false, bool offlineReplacementUrl = false}) async {
     printINFO("Requested id : $songId");
+        // ---> PARCHE PARA RADIOS Y VPS <---
+    if (songId.startsWith('http')) {
+      final audio = Audio(
+          itag: 140,
+          audioCodec: Codec.mp4a,
+          bitrate: 0,
+          duration: 0,
+          loudnessDb: 0,
+          url: songId,
+          size: 0);
+      return HMStreamingData(
+          playable: true,
+          statusMSG: "OK",
+          highQualityAudio: audio,
+          lowQualityAudio: audio);
+    }
+    // ---> FIN DEL PARCHE <---
+
     final songDownloadsBox = Hive.box("SongDownloads");
     if (!offlineReplacementUrl &&
         (await Hive.openBox("SongsCache")).containsKey(songId)) {
