@@ -276,8 +276,20 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
     queue.add(newQueue);
   }
 
-  AudioSource _createAudioSource(MediaItem mediaItem) {
+    AudioSource _createAudioSource(MediaItem mediaItem) {
     final url = mediaItem.extras!['url'] as String;
+
+    // ---> NUEVO PARCHE: EVITAR CACHÉ PARA RADIOS Y VPS <---
+    if (mediaItem.id.startsWith('http')) {
+      printINFO("Playing Direct Stream (No Cache)");
+      isPlayingUsingLockCachingSource = false;
+      return AudioSource.uri(
+        Uri.tryParse(url)!,
+        tag: mediaItem,
+      );
+    }
+    // ---> FIN DEL PARCHE <---
+
     if (url.contains('/cache') ||
         (Get.find<SettingsScreenController>().cacheSongs.isTrue &&
             url.contains("http"))) {
@@ -297,6 +309,7 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
       tag: mediaItem,
     );
   }
+
 
   @override
   // ignore: avoid_renaming_method_parameters
