@@ -124,7 +124,7 @@ class Body extends StatelessWidget {
                 : 85.0;
     final leftPadding =
         settingsScreenController.isBottomNavBarEnabled.isTrue ? 20.0 : 5.0;
-    if (homeScreenController.tabIndex.value == 6) {
+        if (homeScreenController.tabIndex.value == 6) {
       return PantallaRadios(
         alReproducirRadio: (url, titulo) {
           final playerCon = Get.find<PlayerController>();
@@ -135,7 +135,10 @@ class Body extends StatelessWidget {
             artist: 'Radio en Vivo',
             extras: {'url': url}, 
           );
-          audioHandler.playMediaItem(mediaItem);
+          // Usamos los comandos nativos de Harmony Music
+          audioHandler.updateQueue([mediaItem]);
+          audioHandler.customAction('playByIndex', {'index': 0});
+          
           playerCon.playerPanelMinHeight.value = 75.0;
         },
       );
@@ -155,8 +158,10 @@ class Body extends StatelessWidget {
             extras: {'url': song.streamUrl}, 
           )).toList();
 
+          // Usamos los comandos nativos de Harmony Music
           audioHandler.updateQueue(colaMediaItems);
-          audioHandler.playMediaItem(colaMediaItems[indexSeleccionado]);
+          audioHandler.customAction('playByIndex', {'index': indexSeleccionado});
+          
           playerCon.playerPanelMinHeight.value = 75.0;
         },
       );
