@@ -124,7 +124,7 @@ class Body extends StatelessWidget {
                 : 85.0;
     final leftPadding =
         settingsScreenController.isBottomNavBarEnabled.isTrue ? 20.0 : 5.0;
-            if (homeScreenController.tabIndex.value == 5) {
+    if (homeScreenController.tabIndex.value == 6) {
       return PantallaRadios(
         alReproducirRadio: (url, titulo) {
           final playerCon = Get.find<PlayerController>();
@@ -133,6 +133,7 @@ class Body extends StatelessWidget {
             id: url,
             title: titulo,
             artist: 'Radio en Vivo',
+            extras: {'url': url}, 
           );
           audioHandler.playMediaItem(mediaItem);
           playerCon.playerPanelMinHeight.value = 75.0;
@@ -140,7 +141,7 @@ class Body extends StatelessWidget {
       );
     }
 
-    if (homeScreenController.tabIndex.value == 6) {
+    if (homeScreenController.tabIndex.value == 7) {
       return PantallaMusicaExclusiva(
         alReproducirLista: (listaCanciones, indexSeleccionado) {
           final playerCon = Get.find<PlayerController>();
@@ -151,6 +152,7 @@ class Body extends StatelessWidget {
             title: song.title,
             artist: song.folderName,
             album: 'Música Exclusiva',
+            extras: {'url': song.streamUrl}, 
           )).toList();
 
           audioHandler.updateQueue(colaMediaItems);
@@ -159,6 +161,7 @@ class Body extends StatelessWidget {
         },
       );
     }
+
 
 
 if (homeScreenController.tabIndex.value == 0) {
