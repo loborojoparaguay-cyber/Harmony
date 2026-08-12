@@ -5,7 +5,6 @@ import 'package:sidebar_with_animation/animated_side_bar.dart';
 import '../screens/pantalla_radios.dart';
 import '../screens/pantalla_musica_exclusiva.dart';
 
-
 class SideNavBar extends StatelessWidget {
   const SideNavBar({super.key});
 
@@ -14,6 +13,7 @@ class SideNavBar extends StatelessWidget {
     final size = MediaQuery.of(context).size;
     final isMobileOrTabScreen = size.width < 480;
     final homeScreenController = Get.find<HomeScreenController>();
+    
     return Align(
       alignment: Alignment.topCenter,
       child: isMobileOrTabScreen
@@ -24,7 +24,7 @@ class SideNavBar extends StatelessWidget {
                   () => NavigationRail(
                     useIndicator: !isMobileOrTabScreen,
                     selectedIndex:
-                        homeScreenController.tabIndex.value, //_selectedIndex,
+                        homeScreenController.tabIndex.value, 
                     onDestinationSelected:
                         homeScreenController.onSideBarTabSelected,
                     minWidth: 60,
@@ -34,28 +34,24 @@ class SideNavBar extends StatelessWidget {
                     labelType: isMobileOrTabScreen
                         ? NavigationRailLabelType.all
                         : NavigationRailLabelType.none,
-                    //backgroundColor: Colors.green,
                     destinations: <NavigationRailDestination>[
-                      railDestination(
-                          "home".tr, isMobileOrTabScreen, Icons.home),
-                      railDestination(
-                          "songs".tr, isMobileOrTabScreen, Icons.art_track),
-                      railDestination("playlists".tr, isMobileOrTabScreen,
-                          Icons.featured_play_list),
-                      railDestination(
-                          "albums".tr, isMobileOrTabScreen, Icons.album),
-                      railDestination(
-                          "artists".tr, isMobileOrTabScreen, Icons.people),
-                      railDestination("Radios".tr, isMobileOrTabScreen, Icons.radio_rounded),
-railDestination("Exclusivas".tr, isMobileOrTabScreen, Icons.star_rounded),
-
-                      //railDestination("Settings")
+                      railDestination("home".tr, isMobileOrTabScreen, Icons.home), // Índice 0
+                      railDestination("songs".tr, isMobileOrTabScreen, Icons.art_track), // Índice 1
+                      railDestination("playlists".tr, isMobileOrTabScreen, Icons.featured_play_list), // Índice 2
+                      railDestination("albums".tr, isMobileOrTabScreen, Icons.album), // Índice 3
+                      railDestination("artists".tr, isMobileOrTabScreen, Icons.people), // Índice 4
+                      
+                      // SETTINGS PASA A SER EL ÍNDICE 5
                       const NavigationRailDestination(
                         padding: EdgeInsets.only(top: 10, bottom: 10),
                         icon: Icon(Icons.settings),
                         label: SizedBox.shrink(),
                         selectedIcon: Icon(Icons.settings),
-                      )
+                      ),
+                      
+                      // RADIOS Y EXCLUSIVAS PASAN A SER 6 Y 7
+                      railDestination("Radios".tr, isMobileOrTabScreen, Icons.radio_rounded),
+                      railDestination("Exclusivas".tr, isMobileOrTabScreen, Icons.star_rounded),
                     ],
                   ),
                 ),
@@ -78,30 +74,42 @@ railDestination("Exclusivas".tr, isMobileOrTabScreen, Icons.star_rounded),
                     iconSelected: Icons.home,
                     iconUnselected: Icons.home_outlined,
                     text: 'home'.tr,
-                  ),
+                  ), // Índice 0
                   SideBarItem(
                     iconSelected: Icons.audiotrack,
                     iconUnselected: Icons.audiotrack,
                     text: 'songs'.tr,
-                  ),
+                  ), // Índice 1
                   SideBarItem(
                     iconSelected: Icons.library_music,
                     iconUnselected: Icons.library_music_outlined,
                     text: 'playlists'.tr,
-                  ),
+                  ), // Índice 2
                   SideBarItem(
                     iconSelected: Icons.album,
                     iconUnselected: Icons.album_outlined,
                     text: 'albums'.tr,
-                  ),
+                  ), // Índice 3
                   SideBarItem(
                     iconSelected: Icons.person,
                     text: 'artists'.tr,
-                  ),
+                  ), // Índice 4
                   SideBarItem(
                     iconSelected: Icons.settings,
                     iconUnselected: Icons.settings_outlined,
                     text: 'settings'.tr,
+                  ), // Índice 5
+                  
+                  // AGREGADOS PARA PANTALLAS GRANDES (Índices 6 y 7)
+                  SideBarItem(
+                    iconSelected: Icons.radio_rounded,
+                    iconUnselected: Icons.radio_outlined,
+                    text: 'Radios'.tr,
+                  ),
+                  SideBarItem(
+                    iconSelected: Icons.star_rounded,
+                    iconUnselected: Icons.star_outline_rounded,
+                    text: 'Exclusivas'.tr,
                   ),
                 ],
               ),
