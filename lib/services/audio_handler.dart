@@ -276,15 +276,19 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
     queue.add(newQueue);
   }
 
-    AudioSource _createAudioSource(MediaItem mediaItem) {
+  AudioSource _createAudioSource(MediaItem mediaItem) {
     final url = mediaItem.extras!['url'] as String;
 
     // ---> NUEVO PARCHE: EVITAR CACHÉ PARA RADIOS Y VPS <---
     if (mediaItem.id.startsWith('http')) {
       printINFO("Playing Direct Stream (No Cache)");
       isPlayingUsingLockCachingSource = false;
+      
+      // ARREGLO: Codificar la URL por si tiene espacios en el nombre
+      final cleanUrl = Uri.encodeFull(url);
+      
       return AudioSource.uri(
-        Uri.tryParse(url)!,
+        Uri.parse(cleanUrl),
         tag: mediaItem,
       );
     }
@@ -309,7 +313,6 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
       tag: mediaItem,
     );
   }
-
 
   @override
   // ignore: avoid_renaming_method_parameters
