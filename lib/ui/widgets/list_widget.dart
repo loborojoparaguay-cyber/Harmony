@@ -2,6 +2,9 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+// AGREGAMOS ESTA LÍNEA PARA PODER LLAMAR AL GENERADOR DE RADIO
+import '/services/music_service.dart';
+
 import '/models/album.dart';
 import '../../models/artist.dart';
 import '../../models/playling_from.dart';
@@ -95,30 +98,55 @@ class ListWidget extends StatelessWidget with RemoveSongFromPlaylistMixin {
           : const NeverScrollableScrollPhysics(),
       itemBuilder: (context, index) => SongListTile(
         song: items[index] as MediaItem,
-        onTap: () {
-          isArtistSongs
-              // if song is from artist then play from artist
-              ? playerController.playPlayListSong(
-                  List<MediaItem>.from(items), index,
-                  playfrom: PlaylingFrom(
-                      type: PlaylingFromType.ARTIST,
-                      name: artist?.name ?? "........."))
-              :
-              // if playlist is not null then play from playlist else play from album/search
-              playlist != null && album == null
-                  ? playerController.playPlayListSong(
-                      List<MediaItem>.from(items), index,
-                      playfrom: PlaylingFrom(
-                        type: PlaylingFromType.PLAYLIST,
-                        name: playlist.title,
-                      ))
-                  // Acá está la magia: Recortamos la lista (sublist) para que arranque donde tocaste y empiece en el índice 0.
-                  : playerController.playPlayListSong(
-                      List<MediaItem>.from(items.sublist(index)), 0,
-                      playfrom: PlaylingFrom(
-                        type: PlaylingFromType.SELECTION,
-                        name: "Resultados",
-                      ));
+        onTap: () async {
+          if (isArtistSongs) {
+            playerController.playPlayListSong(
+                List<MediaItem>.from(items), index,
+                playfrom: PlaylingFrom(
+                    type: PlaylingFromType.ARTIST,
+                    name: artist?.name ?? "........."));
+          } else if (playlist != null && album == null) {
+            playerController.playPlayListSong(
+                List<MediaItem>.from(items), index,
+                playfrom: PlaylingFrom(
+                  type: PlaylingFromType.PLAYLIST,
+                  name: playlist.title,
+                ));
+          } else {
+            // ACÁ ESTÁ LA MAGIA DEFINITIVA: Generar Radio Automática
+            final song = items[index] as MediaItem;
+
+            // Mostramos un circulito de carga mientras busca las sugerencias en YouTube
+            showDialog(
+                context: context,
+                builder: (context) => const Center(
+                        child: CircularProgressIndicator(
+                      color: Colors.white,
+                    )),
+                barrierDismissible: false);
+
+            try {
+              // Le pedimos a YouTube la lista de reproducción "Radio/Up Next" de esta canción
+              final result = await Get.find<MusicServices>().getSongWithId(song.id);
+              Navigator.of(context).pop(); // Cerramos el circulito de carga
+
+              if (result[0]) {
+                // Si encontró la radio, reproducimos esa lista entera desde el inicio (la tuya queda primera)
+                playerController.playPlayListSong(
+                    List<MediaItem>.from(result[1]), 0,
+                    playfrom: PlaylingFrom(
+                      type: PlaylingFromType.SELECTION,
+                      name: "Radio",
+                    ));
+              } else {
+                // Por si acaso falla YouTube, reproducimos solo la canción para que no se trabe
+                playerController.pushSongToQueue(song);
+              }
+            } catch (e) {
+              Navigator.of(context).pop();
+              playerController.pushSongToQueue(song);
+            }
+          }
         },
       ),
     );
