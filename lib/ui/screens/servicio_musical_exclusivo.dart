@@ -20,7 +20,7 @@ class DriveSong {
       id: fileId,
       title: json['title'] ?? json['name'] ?? 'Sin título',
       folderName: json['folderName'] ?? json['album'] ?? 'Carpeta Principal',
-      streamUrl: 'https://loborojopy.shop/api/drive/stream/$fileId',
+      streamUrl: 'https://music.loborojo.store/api/drive/stream/$fileId',
     );
   }
 }
@@ -29,7 +29,7 @@ class ExclusiveMusicService {
   static Future<List<DriveSong>> fetchExclusiveSongs() async {
     try {
       final response = await http.get(
-        Uri.parse('https://loborojopy.shop/api/drive/music'),
+        Uri.parse('https://music.loborojo.store/api/drive/music'),
       );
       if (response.statusCode == 200) {
         Map<String, dynamic> data = jsonDecode(response.body);
