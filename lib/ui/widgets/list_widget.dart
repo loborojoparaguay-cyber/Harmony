@@ -112,9 +112,9 @@ class ListWidget extends StatelessWidget with RemoveSongFromPlaylistMixin {
                         type: PlaylingFromType.PLAYLIST,
                         name: playlist.title,
                       ))
-                  // Acá está la magia: le decimos que tome la lista entera de resultados
+                  // Acá está la magia: Recortamos la lista (sublist) para que arranque donde tocaste y empiece en el índice 0.
                   : playerController.playPlayListSong(
-                      List<MediaItem>.from(items), index,
+                      List<MediaItem>.from(items.sublist(index)), 0,
                       playfrom: PlaylingFrom(
                         type: PlaylingFromType.SELECTION,
                         name: "Resultados",
