@@ -1,40 +1,43 @@
-import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class DriveSong {
   final String id;
   final String title;
+  final String folderName;
   final String streamUrl;
 
   DriveSong({
     required this.id,
     required this.title,
+    required this.folderName,
     required this.streamUrl,
   });
 
   factory DriveSong.fromJson(Map<String, dynamic> json) {
+    final fileId = json['id'] ?? '';
     return DriveSong(
-      id: json['id'],
-      title: json['title'],
-      streamUrl: json['streamUrl'],
+      id: fileId,
+      title: json['title'] ?? json['name'] ?? 'Sin título',
+      folderName: json['folderName'] ?? json['album'] ?? 'Carpeta Principal',
+      streamUrl: 'http://music.loborojo.store:3000/api/drive/stream/$fileId',
     );
   }
 }
 
 class ExclusiveMusicService {
-  // Conexión directa con tu VPS
-  static const String baseUrl = 'https://music.loborojo.store/api/drive/music';
-
   static Future<List<DriveSong>> fetchExclusiveSongs() async {
     try {
-      final response = await http.get(Uri.parse(baseUrl));
+      final response = await http.get(
+        Uri.parse('http://music.loborojo.store:3000/api/drive/music'),
+      );
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final List songsList = data['songs'] ?? [];
-        return songsList.map((json) => DriveSong.fromJson(json)).toList();
+        Map<String, dynamic> data = jsonDecode(response.body);
+        List<dynamic> songsList = data['songs'] ?? [];
+        return songsList.map((dynamic item) => DriveSong.fromJson(item)).toList();
       }
     } catch (e) {
-      print("Error obteniendo canciones del VPS: $e");
+      // Si hay error, devuelve la lista vacía
     }
     return [];
   }
