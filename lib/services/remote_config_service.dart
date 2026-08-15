@@ -6,13 +6,13 @@ class RemoteConfigService {
   static String pipedInstance = 'https://piped.kavin.rocks';
   static bool isMaintenance = false;
 
-  // 🔥 AQUÍ DEFINÍS TU API CENTRAL (Ahora con HTTPS y sin el puerto 3000 gracias a Cloudflare)
+  // Tu API central (con HTTPS y sin el puerto 3000 gracias a Cloudflare)
   static const String baseUrl = 'https://music.loborojo.store';
 
   static const String _configUrl = '$baseUrl/api/config';
 
   /// Llama al servidor para traer la configuración actualizada
-  static static Future<void> init() async {
+  static Future<void> init() async {
     try {
       final response = await http.get(Uri.parse(_configUrl)).timeout(
         const Duration(seconds: 4),
