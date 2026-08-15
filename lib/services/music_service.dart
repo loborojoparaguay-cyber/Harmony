@@ -28,7 +28,7 @@ class MusicServices extends getx.GetxService {
 
   String get hlCode => _hlCode;
 
-  // --- 1. CARGA DEL INICIO (Acepta el parámetro 'limit' requerido por el controlador) ---
+  // --- 1. CARGA DEL INICIO ---
   Future<List<dynamic>> getHome({int limit = 4}) async {
     try {
       final response = await dio.get('${RemoteConfigService.baseUrl}/api/drive/music');
@@ -48,12 +48,12 @@ class MusicServices extends getx.GetxService {
     return [];
   }
 
-  // --- 2. CHARTS (Requerido por HomeScreenController) ---
+  // --- 2. CHARTS ---
   Future<List<Map<String, dynamic>>> getCharts(String category, {String? countryCode}) async {
     return [];
   }
 
-  // --- 3. CONTENIDO RELACIONADO (Requerido por HomeScreenController) ---
+  // --- 3. CONTENIDO RELACIONADO ---
   Future<dynamic> getContentRelatedToSong(String videoId, String hlCode) async {
     try {
       final response = await dio.get(
@@ -75,7 +75,7 @@ class MusicServices extends getx.GetxService {
     return [];
   }
 
-  // --- 4. BÚSQUEDA (Consulta a tu servidor con youtubei.js) ---
+  // --- 4. BÚSQUEDA ---
   Future<Map<String, dynamic>> search(String query,
       {String? filter,
       String? scope,
@@ -151,7 +151,19 @@ class MusicServices extends getx.GetxService {
     };
   }
 
-  // --- 6. MÉTODOS AUXILIARES REQUERIDOS POR LA APP ---
+  // --- 6. MÉTODOS REQUERIDOS POR PANTALLAS DE ARTISTAS Y BÚSQUEDA ---
+  Future<Map<String, dynamic>> getArtistRealtedContent(
+      Map<String, dynamic> browseEndpoint, String category,
+      {String additionalParams = ""}) async {
+    return {"results": [], "additionalParams": ""};
+  }
+
+  Future<Map<String, dynamic>> getSearchContinuation(Map additionalParamsNext,
+      {int limit = 10}) async {
+    return {};
+  }
+
+  // --- 7. MÉTODOS AUXILIARES ---
   Future<List<String>> getSearchSuggestion(String queryStr) async => [];
 
   Future<List> getSongWithId(String songId) async {
