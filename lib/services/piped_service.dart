@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 
 import '../utils/helper.dart';
+import 'remote_config_service.dart'; // <--- 1. IMPORTAMOS EL SERVICIO REMOTO
 
 class PipedServices extends GetxService {
   final Map<String, dynamic> _headers = {};
@@ -15,10 +16,14 @@ class PipedServices extends GetxService {
     final appPrefsBox = Hive.box('AppPrefs');
     final piped = appPrefsBox.get('piped') ??
         {"isLoggedIn": false, "token": "", "instApiUrl": ""};
+    
     _isLoggedIn = piped["isLoggedIn"];
-    if (isLoggedIn) {
+    if (_isLoggedIn) {
       _headers["Authorization"] = piped['token'];
       _insApiUrl = piped["instApiUrl"];
+    } else {
+      // 🔥 2. SI NO HAY SESIÓN, USAMOS LA INSTANCIA DINÁMICA DE TU SERVIDOR
+      _insApiUrl = RemoteConfigService.pipedInstance;
     }
   }
 
@@ -45,7 +50,7 @@ class PipedServices extends GetxService {
         return Res(0, errorMessage: response.data['error']);
       }
 
-      printINFO("Login successful! topken : ${data['token']}");
+      printINFO("Login successful! token : ${data['token']}");
       return Res(1, response: response.data);
     } on DioException catch (e) {
       printERROR("Login Failed! => ${e.response?.statusMessage ?? e.message}");
@@ -59,7 +64,8 @@ class PipedServices extends GetxService {
         .put("piped", {"isLoggedIn": false, "token": "", "instApiUrl": ""});
     _headers["Authorization"] = "";
     _isLoggedIn = false;
-    _insApiUrl = "";
+    // Al salir, volvemos a la instancia remota por defecto
+    _insApiUrl = RemoteConfigService.pipedInstance;
   }
 
   Future<Res> _sendRequest(String endpoint,
@@ -67,6 +73,12 @@ class PipedServices extends GetxService {
       String reqType = "post",
       bool isInstanceListReq = false,
       bool isSongListReq = false}) async {
+    
+    // 🛡️ Aseguramos que siempre haya una URL válida antes de enviar la petición
+    if (_insApiUrl.isEmpty) {
+      _insApiUrl = RemoteConfigService.pipedInstance;
+    }
+
     final url = isInstanceListReq
         ? "https://piped-instances.kavin.rocks/"
         : "$_insApiUrl$endpoint";
