@@ -1,0 +1,35 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+class RemoteConfigService {
+  // Instancia por defecto si el servidor no responde o no hay internet
+  static String pipedInstance = 'https://piped.kavin.rocks';
+  static bool isMaintenance = false;
+
+  static const String _configUrl = 'http://music.loborojo.store:3000/api/config';
+
+  /// Llama al servidor para traer la configuración actualizada
+  static Future<void> init() async {
+    try {
+      final response = await http.get(Uri.parse(_configUrl)).timeout(
+        const Duration(seconds: 4),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        
+        if (data.containsKey('piped_instance') && data['piped_instance'] != null) {
+          pipedInstance = data['piped_instance'];
+        }
+        
+        if (data.containsKey('maintenance_mode') && data['maintenance_mode'] != null) {
+          isMaintenance = data['maintenance_mode'];
+        }
+
+        print('✅ Remote Config cargado: pipedInstance = $pipedInstance');
+      }
+    } catch (e) {
+      print('⚠️ No se pudo cargar Remote Config, usando valores por defecto: $e');
+    }
+  }
+}
