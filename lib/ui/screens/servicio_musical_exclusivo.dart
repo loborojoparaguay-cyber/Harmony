@@ -1,6 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'remote_config_service.dart';
+import '../../services/remote_config_service.dart';
 
 class DriveSong {
   final String id;
