@@ -27,30 +27,25 @@ class MusicServices extends getx.GetxService {
 
   String get hlCode => _hlCode;
 
-  // --- 1. CARGA DEL INICIO (Llena el home aprovechando el buscador de tu servidor) ---
+  // --- 1. CARGA DEL INICIO (Se conecta al nuevo /api/home de tu servidor) ---
   Future<List<dynamic>> getHome({int limit = 4}) async {
     try {
-      final response = await dio.get(
-        '${RemoteConfigService.baseUrl}/api/search',
-        queryParameters: {'q': 'exitos musicales del momento'},
-      );
+      final response = await dio.get('${RemoteConfigService.baseUrl}/api/home');
       
       if (response.statusCode == 200 && response.data is List) {
         final List data = response.data;
-        final songs = data.map((item) => MediaItem(
-          id: item['videoId'] ?? item['id'] ?? '',
-          title: item['title'] ?? 'Sin título',
-          artist: item['artist'] ?? 'Desconocido',
-          artUri: Uri.parse(item['thumbnail'] ?? ''),
-        )).toList();
-
-        // Estructura requerida en formato de sección para la pantalla principal
-        return [
-          {
-            'title': 'Lo más sonado',
-            'contents': songs,
-          }
-        ];
+        
+        return data.map((section) {
+          return {
+            'title': section['title'] ?? 'Inicio',
+            'contents': (section['contents'] as List).map((item) => MediaItem(
+              id: item['videoId'] ?? item['id'] ?? '',
+              title: item['title'] ?? 'Sin título',
+              artist: item['artist'] ?? 'Desconocido',
+              artUri: Uri.parse(item['thumbnail'] ?? ''),
+            )).toList(),
+          };
+        }).toList();
       }
     } catch (e) {
       printERROR("Error al cargar el inicio: $e");
