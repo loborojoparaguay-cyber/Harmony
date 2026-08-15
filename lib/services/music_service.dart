@@ -27,13 +27,12 @@ class MusicServices extends getx.GetxService {
 
   String get hlCode => _hlCode;
 
-  // --- 1. CARGA DEL INICIO (Ahora trae contenido de YouTube a través de tu servidor) ---
+  // --- 1. CARGA DEL INICIO (Llena el home aprovechando el buscador de tu servidor) ---
   Future<List<dynamic>> getHome({int limit = 4}) async {
     try {
-      // Pedimos música general a tu servidor para que use youtubei.js y devuelva YouTube
       final response = await dio.get(
         '${RemoteConfigService.baseUrl}/api/search',
-        queryParameters: {'q': 'musica variada exitos'},
+        queryParameters: {'q': 'exitos musicales del momento'},
       );
       
       if (response.statusCode == 200 && response.data is List) {
@@ -45,16 +44,16 @@ class MusicServices extends getx.GetxService {
           artUri: Uri.parse(item['thumbnail'] ?? ''),
         )).toList();
 
-        // Estructura en sección para la pantalla principal
+        // Estructura requerida en formato de sección para la pantalla principal
         return [
           {
-            'title': 'Recomendados de YouTube',
+            'title': 'Lo más sonado',
             'contents': songs,
           }
         ];
       }
     } catch (e) {
-      printERROR("Error al cargar el inicio de YouTube: $e");
+      printERROR("Error al cargar el inicio: $e");
     }
     return [];
   }
