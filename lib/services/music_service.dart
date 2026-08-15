@@ -4,27 +4,39 @@ import 'package:audio_service/audio_service.dart';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart' as getx;
 import 'remote_config_service.dart';
-import '../utils/helper.dart';
-
-enum AudioQuality {
-  Low,
-  High,
-}
+import '../utils/helper.dart'; // Asegúrate de que esta ruta sea la correcta en tu proyecto
 
 class MusicServices extends getx.GetxService {
   final dio = Dio();
 
   @override
   void onInit() {
-    init();
+    printINFO("🚀 MusicServices inicializado apuntando a tu servidor central");
     super.onInit();
   }
 
-  Future<void> init() async {
-    printINFO("🚀 MusicServices inicializado apuntando a tu servidor central");
+  // --- 1. CARGA DEL INICIO (Carga tus músicas exclusivas en el Home) ---
+  Future<List<dynamic>> getHome() async {
+    try {
+      final response = await dio.get('${RemoteConfigService.baseUrl}/api/drive/music');
+      if (response.statusCode == 200) {
+        final data = response.data;
+        // Convertimos el JSON a una lista de canciones
+        final songs = (data['songs'] as List).map((item) => MediaItem(
+          id: item['videoId'] ?? item['id'] ?? '',
+          title: item['title'] ?? 'Sin título',
+          artist: item['artist'] ?? 'Música Exclusiva',
+          artUri: Uri.parse(item['thumbnail'] ?? ''),
+        )).toList();
+        return songs;
+      }
+    } catch (e) {
+      printERROR("Error al cargar el inicio: $e");
+    }
+    return [];
   }
 
-  // --- BÚSQUEDA GESTIONADA POR TU SERVIDOR (youtubei.js) ---
+  // --- 2. BÚSQUEDA (Consulta a tu servidor con youtubei.js) ---
   Future<Map<String, dynamic>> search(String query,
       {String? filter,
       String? scope,
@@ -40,20 +52,15 @@ class MusicServices extends getx.GetxService {
       if (response.statusCode == 200 && response.data is List) {
         final List data = response.data;
         
-        // Convertimos la respuesta de tu servidor al formato que la app espera
         final songs = data.map((item) => MediaItem(
           id: item['videoId'] ?? item['id'] ?? '',
           title: item['title'] ?? 'Sin título',
           artist: item['artist'] ?? 'Desconocido',
           artUri: Uri.parse(item['thumbnail'] ?? ''),
-          extras: {
-            'resultType': 'song',
-          },
+          extras: {'resultType': 'song'},
         )).toList();
 
-        return {
-          'Songs': songs,
-        };
+        return {'Songs': songs};
       }
     } catch (e) {
       printERROR("Error en búsqueda del servidor: $e");
@@ -61,7 +68,7 @@ class MusicServices extends getx.GetxService {
     return {};
   }
 
-  // --- COLA DE REPRODUCCIÓN / RADIO / RELACIONADOS GESTIONADA POR TU SERVIDOR ---
+  // --- 3. COLA DE REPRODUCCIÓN / RADIO ---
   Future<Map<String, dynamic>> getWatchPlaylist(
       {String videoId = "",
       String? playlistId,
@@ -71,10 +78,6 @@ class MusicServices extends getx.GetxService {
       String? additionalParamsNext,
       bool onlyRelated = false}) async {
     
-    if (videoId.isNotEmpty && videoId.substring(0, 4) == "MPED") {
-      videoId = videoId.substring(4);
-    }
-
     try {
       final response = await dio.get(
         '${RemoteConfigService.baseUrl}/api/next',
@@ -112,39 +115,23 @@ class MusicServices extends getx.GetxService {
     };
   }
 
-  // Métodos de soporte auxiliares requeridos por la estructura de la app
-  Future<List<String>> getSearchSuggestion(String queryStr) async {
-    return [];
-  }
+  // Métodos necesarios para que la app no tire errores
+  Future<List<String>> getSearchSuggestion(String queryStr) async => [];
 
   Future<List> getSongWithId(String songId) async {
     final list = await getWatchPlaylist(videoId: songId);
-    if ((list['tracks'] as List).isNotEmpty) {
-      return [true, list['tracks']];
-    }
-    return [false, null];
+    return ((list['tracks'] as List).isNotEmpty) ? [true, list['tracks']] : [false, null];
   }
 
-  Future<Map<String, dynamic>> getArtist(String channelId) async {
-    return {'name': 'Artista', 'description': '', 'thumbnails': []};
-  }
+  Future<Map<String, dynamic>> getArtist(String channelId) async => 
+      {'name': 'Artista', 'description': '', 'thumbnails': []};
 
-  Future<Map<String, dynamic>> getPlaylistOrAlbumSongs(
-      {String? playlistId,
-      String? albumId,
-      int limit = 3000,
-      bool related = false,
-      int suggestionsLimit = 0}) async {
-    return {'tracks': [], 'title': 'Playlist'};
-  }
+  Future<Map<String, dynamic>> getPlaylistOrAlbumSongs({String? playlistId, String? albumId}) async => 
+      {'tracks': [], 'title': 'Playlist'};
 
   @override
   void onClose() {
     dio.close();
     super.onClose();
   }
-}
-
-class NetworkError extends Error {
-  final message = "Network Error !";
 }
