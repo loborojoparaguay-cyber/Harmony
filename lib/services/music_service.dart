@@ -21,29 +21,40 @@ class MusicServices extends getx.GetxService {
     super.onInit();
   }
 
-  // --- Setter requerido por SettingsScreenController ---
   set hlCode(String code) {
     _hlCode = code;
   }
 
   String get hlCode => _hlCode;
 
-  // --- 1. CARGA DEL INICIO ---
+  // --- 1. CARGA DEL INICIO (Ahora trae contenido de YouTube a través de tu servidor) ---
   Future<List<dynamic>> getHome({int limit = 4}) async {
     try {
-      final response = await dio.get('${RemoteConfigService.baseUrl}/api/drive/music');
-      if (response.statusCode == 200) {
-        final data = response.data;
-        final songs = (data['songs'] as List).map((item) => MediaItem(
+      // Pedimos música general a tu servidor para que use youtubei.js y devuelva YouTube
+      final response = await dio.get(
+        '${RemoteConfigService.baseUrl}/api/search',
+        queryParameters: {'q': 'musica variada exitos'},
+      );
+      
+      if (response.statusCode == 200 && response.data is List) {
+        final List data = response.data;
+        final songs = data.map((item) => MediaItem(
           id: item['videoId'] ?? item['id'] ?? '',
           title: item['title'] ?? 'Sin título',
-          artist: item['artist'] ?? 'Música Exclusiva',
+          artist: item['artist'] ?? 'Desconocido',
           artUri: Uri.parse(item['thumbnail'] ?? ''),
         )).toList();
-        return songs;
+
+        // Estructura en sección para la pantalla principal
+        return [
+          {
+            'title': 'Recomendados de YouTube',
+            'contents': songs,
+          }
+        ];
       }
     } catch (e) {
-      printERROR("Error al cargar el inicio: $e");
+      printERROR("Error al cargar el inicio de YouTube: $e");
     }
     return [];
   }
@@ -115,6 +126,11 @@ class MusicServices extends getx.GetxService {
       bool shuffle = false,
       String? additionalParamsNext,
       bool onlyRelated = false}) async {
+    
+    if (videoId.isNotEmpty && videoId.substring(0, 4) == "MPED") {
+      videoId = videoId.substring(4);
+    }
+
     try {
       final response = await dio.get(
         '${RemoteConfigService.baseUrl}/api/next',
@@ -151,7 +167,7 @@ class MusicServices extends getx.GetxService {
     };
   }
 
-  // --- 6. MÉTODOS REQUERIDOS POR PANTALLAS DE ARTISTAS Y BÚSQUEDA ---
+  // --- 6. MÉTODOS REQUERIDOS POR PANTALLAS ---
   Future<Map<String, dynamic>> getArtistRealtedContent(
       Map<String, dynamic> browseEndpoint, String category,
       {String additionalParams = ""}) async {
