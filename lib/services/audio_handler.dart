@@ -831,7 +831,7 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
       if (streamInfo == null) {
         
         // ---> PARCHE DEFINITIVO: BYPASS CON TU DOMINIO <---
-        const String myDomainUrl = "https://music.loborojo.store"; 
+        const String myDomainUrl = "http://music.loborojo.store:3000"; 
         
         String proxyUrl = "";
         
