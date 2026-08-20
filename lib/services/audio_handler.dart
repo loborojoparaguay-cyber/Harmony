@@ -178,16 +178,6 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
           return;
         }
 
-        //Workaround when 403 error encountered
-        // customAction("playByIndex", {'index': currentIndex, 'newUrl': true})
-        //     .whenComplete(() async {
-        //   await _player.stop();
-        //   if (currentSongUrl == null) {
-        //     networkErrorPause = true;
-        //   } else {
-        //     _player.play();
-        //   }
-        // });
         customAction("playByIndex", {'index': currentIndex, 'newUrl': true});
         await _player.seek(curPos, index: 0);
       }
@@ -279,12 +269,10 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
   AudioSource _createAudioSource(MediaItem mediaItem) {
     final url = mediaItem.extras!['url'] as String;
 
-    // ---> NUEVO PARCHE: EVITAR CACHÉ PARA RADIOS Y VPS <---
-    if (mediaItem.id.startsWith('http')) {
+    if (mediaItem.id.startsWith('http') || url.startsWith('http')) {
       printINFO("Playing Direct Stream (No Cache)");
       isPlayingUsingLockCachingSource = false;
       
-      // ARREGLO: Codificar la URL por si tiene espacios en el nombre
       final cleanUrl = Uri.encodeFull(url);
       
       return AudioSource.uri(
@@ -292,7 +280,6 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
         tag: mediaItem,
       );
     }
-    // ---> FIN DEL PARCHE <---
 
     if (url.contains('/cache') ||
         (Get.find<SettingsScreenController>().cacheSongs.isTrue &&
@@ -346,17 +333,6 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
       await customAction("playByIndex", {'index': currentIndex});
       return;
     }
-    // Workaround for network error pause in case of PlayingUsingLockCachingSource
-    // if (isPlayingUsingLockCachingSource && networkErrorPause) {
-    //   await _player.play();
-    //   Future.delayed(const Duration(seconds: 2)).then((value) {
-    //     if (_player.playing) {
-    //       networkErrorPause = false;
-    //     }
-    //   });
-    //   await _player.play();
-    //   return;
-    // }
     await _player.play();
   }
 
@@ -536,7 +512,6 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
             final dbStreamData = Hive.box("SongsUrlCache").get(song.id);
             final jsonData = MediaItemBuilder.toJson(song);
             jsonData['duration'] = _player.duration!.inSeconds;
-            // playbility status and info
             jsonData['streamInfo'] = dbStreamData != null
                 ? [
                     true,
@@ -579,7 +554,6 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
         await _playList.add(_createAudioSource(currMed));
         isSongLoading = false;
 
-        // Normalize audio
         if (loudnessNormalizationEnabled && GetPlatform.isAndroid) {
           _normalizeVolume(streamInfo.audio!.loudnessDb);
         }
@@ -679,7 +653,6 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
         break;
 
       case 'upadateMediaItemInAudioService':
-        //added to update media item from player controller
         final songIndex = extras!['index'];
         currentIndex = songIndex;
         mediaItem.add(queue.value[currentIndex]);
@@ -716,10 +689,6 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
 
   void _normalizeVolume(double currentLoudnessDb) {
     double loudnessDifference = -5 - currentLoudnessDb;
-
-    // Converted loudness difference to a volume multiplier
-    // We use a factor to convert dB difference to a linear scale
-    // 10^(difference / 20) converts dB difference to a linear volume factor
     final volumeAdjustment = pow(10.0, loudnessDifference / 20.0);
     printINFO(
         "loudness:$currentLoudnessDb Normalized volume: $volumeAdjustment");
@@ -745,7 +714,6 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
     }
   }
 
-  /// Android Auto
   @override
   Future<List<MediaItem>> getChildren(String parentMediaId,
       [Map<String, dynamic>? options]) async {
@@ -760,7 +728,6 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
         .shareValue();
   }
 
-  // only for Android Auto
   @override
   Future<void> playFromMediaId(String mediaId,
       [Map<String, dynamic>? extras]) async {
@@ -788,11 +755,37 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
     return super.stop();
   }
 
-// Work around used [useNewInstanceOfExplode = false] to Fix Connection closed before full header was received issue
   Future<HMStreamingData> checkNGetUrl(String songId,
       {bool generateNewUrl = false, bool offlineReplacementUrl = false}) async {
     printINFO("Requested id : $songId");
-        // ---> PARCHE PARA RADIOS Y VPS <---
+    
+    // ---> PARCHE INTELIGENTE PARA VPS Y PROXY <---
+    try {
+      final currentSong = queue.value.firstWhereOrNull((s) => s.id == songId);
+      if (currentSong != null && currentSong.extras != null && currentSong.extras!['url'] != null) {
+        final serverUrl = currentSong.extras!['url'] as String;
+        if (serverUrl.startsWith('http')) {
+          printINFO("Usando URL directa del servidor VPS: $serverUrl");
+          final audio = Audio(
+              itag: 140,
+              audioCodec: Codec.mp4a,
+              bitrate: 0,
+              duration: 0,
+              loudnessDb: 0,
+              url: serverUrl,
+              size: 0);
+          return HMStreamingData(
+              playable: true,
+              statusMSG: "OK",
+              highQualityAudio: audio,
+              lowQualityAudio: audio);
+        }
+      }
+    } catch (e) {
+      printERROR("Error en parche VPS: $e");
+    }
+    // ---> FIN DEL PARCHE <---
+
     if (songId.startsWith('http')) {
       final audio = Audio(
           itag: 140,
@@ -808,13 +801,11 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
           highQualityAudio: audio,
           lowQualityAudio: audio);
     }
-    // ---> FIN DEL PARCHE <---
 
     final songDownloadsBox = Hive.box("SongDownloads");
     if (!offlineReplacementUrl &&
         (await Hive.openBox("SongsCache")).containsKey(songId)) {
       printINFO("Got Song from cachedbox ($songId)");
-      // if contains stream Info
       final streamInfo = Hive.box("SongsCache").get(songId)["streamInfo"];
       Audio? cacheAudioPlaceholder;
       if (streamInfo != null && streamInfo.isNotEmpty) {
@@ -864,15 +855,12 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
           "${Get.find<SettingsScreenController>().supportDirPath}/Music")) {
         return streamInfo;
       }
-      //check file access and if file exist in storage
       final status = await PermissionService.getExtStoragePermission();
       if (status && await File(path).exists()) {
         return streamInfo;
       }
-      //in case file doesnot found in storage, song will be played online
       return checkNGetUrl(songId, offlineReplacementUrl: true);
     } else {
-      //check if song stream url is cached and allocate url accordingly
       final songsUrlCacheBox = Hive.box("SongsUrlCache");
       final qualityIndex = Hive.box('AppPrefs').get('streamingQuality') ?? 1;
       HMStreamingData? streamInfo;
@@ -903,8 +891,6 @@ class UrlError extends Error {
   String message() => 'Unable to fetch url';
 }
 
-
-// for Android Auto
 class MediaLibrary {
   static const albumsRootId = 'albums';
   static const songsRootId = 'songs';
