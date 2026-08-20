@@ -161,7 +161,6 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
         queueIndex: currentIndex,
       ));
 
-      //print("set ${playbackState.value.queueIndex},${event.currentIndex}");
     }, onError: (Object e, StackTrace st) async {
       if (e is PlayerException) {
         printERROR('Error code: ${e.code}');
@@ -232,7 +231,6 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
 
   @override
   Future<void> addQueueItems(List<MediaItem> mediaItems) async {
-    // notify system
     final newQueue = queue.value..addAll(mediaItems);
     queue.add(newQueue);
 
@@ -261,7 +259,6 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
       shuffledQueue.add(mediaItem.id);
     }
 
-    // notify system
     final newQueue = queue.value..add(mediaItem);
     queue.add(newQueue);
   }
@@ -302,7 +299,6 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
   }
 
   @override
-  // ignore: avoid_renaming_method_parameters
   Future<void> removeQueueItem(MediaItem mediaItem_) async {
     if (shuffleModeEnabled) {
       final id = mediaItem_.id;
@@ -758,49 +754,6 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
   Future<HMStreamingData> checkNGetUrl(String songId,
       {bool generateNewUrl = false, bool offlineReplacementUrl = false}) async {
     printINFO("Requested id : $songId");
-    
-    // ---> PARCHE INTELIGENTE PARA VPS Y PROXY <---
-    try {
-      final currentSong = queue.value.firstWhereOrNull((s) => s.id == songId);
-      if (currentSong != null && currentSong.extras != null && currentSong.extras!['url'] != null) {
-        final serverUrl = currentSong.extras!['url'] as String;
-        if (serverUrl.startsWith('http')) {
-          printINFO("Usando URL directa del servidor VPS: $serverUrl");
-          final audio = Audio(
-              itag: 140,
-              audioCodec: Codec.mp4a,
-              bitrate: 0,
-              duration: 0,
-              loudnessDb: 0,
-              url: serverUrl,
-              size: 0);
-          return HMStreamingData(
-              playable: true,
-              statusMSG: "OK",
-              highQualityAudio: audio,
-              lowQualityAudio: audio);
-        }
-      }
-    } catch (e) {
-      printERROR("Error en parche VPS: $e");
-    }
-    // ---> FIN DEL PARCHE <---
-
-    if (songId.startsWith('http')) {
-      final audio = Audio(
-          itag: 140,
-          audioCodec: Codec.mp4a,
-          bitrate: 0,
-          duration: 0,
-          loudnessDb: 0,
-          url: songId,
-          size: 0);
-      return HMStreamingData(
-          playable: true,
-          statusMSG: "OK",
-          highQualityAudio: audio,
-          lowQualityAudio: audio);
-    }
 
     final songDownloadsBox = Hive.box("SongDownloads");
     if (!offlineReplacementUrl &&
@@ -864,6 +817,7 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
       final songsUrlCacheBox = Hive.box("SongsUrlCache");
       final qualityIndex = Hive.box('AppPrefs').get('streamingQuality') ?? 1;
       HMStreamingData? streamInfo;
+      
       if (songsUrlCacheBox.containsKey(songId) && !generateNewUrl) {
         final streamInfoJson = songsUrlCacheBox.get(songId);
         if (streamInfoJson.runtimeType.toString().contains("Map") &&
@@ -873,12 +827,37 @@ class MyAudioHandler extends BaseAudioHandler with GetxServiceMixin {
         }
       }
 
+      // SI NO HAY CACHÉ, INTERCEPTAMOS Y CREAMOS EL ENLACE A TU DOMINIO
       if (streamInfo == null) {
-        final token = RootIsolateToken.instance;
-        final streamInfoJson =
-            await Isolate.run(() => getStreamInfo(songId, token));
-        streamInfo = HMStreamingData.fromJson(streamInfoJson);
-        if (streamInfo.playable) songsUrlCacheBox.put(songId, streamInfoJson);
+        
+        // ---> PARCHE DEFINITIVO: BYPASS CON TU DOMINIO <---
+        const String myDomainUrl = "https://music.loborojo.store"; 
+        
+        String proxyUrl = "";
+        
+        if (songId.length > 20) {
+          proxyUrl = "$myDomainUrl/api/drive/stream/$songId";
+        } else {
+          proxyUrl = "$myDomainUrl/api/stream/$songId";
+        }
+        
+        printINFO("Audio interceptado -> Redirigiendo a tu dominio: $proxyUrl");
+        
+        final audio = Audio(
+            itag: 140,
+            audioCodec: Codec.mp4a,
+            bitrate: 0,
+            duration: 0,
+            loudnessDb: 0,
+            url: proxyUrl,
+            size: 0);
+            
+        streamInfo = HMStreamingData(
+            playable: true,
+            statusMSG: "OK",
+            highQualityAudio: audio,
+            lowQualityAudio: audio);
+        // ---> FIN DEL PARCHE <---
       }
 
       streamInfo.setQualityIndex(qualityIndex as int);
