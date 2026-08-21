@@ -407,28 +407,17 @@ class PlayerController extends GetxController
     await pushSongToQueue(mediaItem, playlistid: playlistid, radio: true);
   }
 
-  // --- MÉTODO PARA REPRODUCIR RADIOS EN VIVO DE PARAGUAY ---
-  Future<void> playRadio(String streamUrl, String name) async {
+  
+  // --- MÉTODO PARA REPRODUCIR RADIOS EN VIVO DIRECTO ---
+  Future<void> playRadioDirect(MediaItem radioItem) async {
     isRadioModeOn = false;
     playinfrom.value = PlaylingFrom(
       type: PlaylingFromType.SELECTION, 
-      name: name
-    );
-
-    final radioItem = MediaItem(
-      id: streamUrl,
-      title: name,
-      artist: 'Radio en Vivo 📻',
-      artUri: Uri.parse('https://cdn-icons-png.flaticon.com/512/2995/2995105.png'),
-      extras: {
-        'url': streamUrl,
-        'streamUrl': streamUrl,
-      },
+      name: "Radios en Vivo"
     );
 
     _playerPanelCheck();
-    await _audioHandler.updateQueue([radioItem]);
-    await _audioHandler.customAction("playByIndex", {"index": 0});
+    await _audioHandler.customAction("setSourceNPlay", {'mediaItem': radioItem});
   }
 
   Future<void> _addRadioContinuation(dynamic item) async {
