@@ -368,27 +368,39 @@ class PlayerController extends GetxController
     }
   }
 
-  Future<void> playPlayListSong(List<MediaItem> mediaItems, int index,
+    Future<void> playPlayListSong(List<MediaItem> mediaItems, int index,
       {PlaylingFrom? playfrom}) async {
-    isRadioModeOn = false;
+    
+    // Obtenemos el nombre de donde viene la acción
+    String fromName = playfrom?.name?.toLowerCase() ?? "";
 
-    playinfrom.value =
-        playfrom ?? PlaylingFrom(type: PlaylingFromType.SELECTION);
+    // Si estás reproduciendo desde tus Favoritos o Playlists guardadas, respeta esa lista y la reproduce normal.
+    if (fromName.contains("playlist") || fromName.contains("fav") || fromName.contains("library")) {
+      isRadioModeOn = false;
+      playinfrom.value = playfrom ?? PlaylingFrom(type: PlaylingFromType.SELECTION);
 
-    Future.delayed(const Duration(seconds: 3), () {
-      if (Hive.box("AppPrefs").get("discoverContentType") == "BOLI") {
-        Get.find<HomeScreenController>()
-            .changeDiscoverContent("BOLI", songId: mediaItems[index].id);
+      Future.delayed(const Duration(seconds: 3), () {
+        if (Hive.box("AppPrefs").get("discoverContentType") == "BOLI") {
+          Get.find<HomeScreenController>()
+              .changeDiscoverContent("BOLI", songId: mediaItems[index].id);
+        }
+      });
+
+      _playerPanelCheck();
+      await _audioHandler.updateQueue(mediaItems);
+      if (isShuffleModeEnabled.value) {
+        await _audioHandler.customAction("shuffleCmd", {"index": index});
       }
-    });
-
-    _playerPanelCheck();
-    await _audioHandler.updateQueue(mediaItems);
-    if (isShuffleModeEnabled.value) {
-      await _audioHandler.customAction("shuffleCmd", {"index": index});
+      await _audioHandler.customAction("playByIndex", {"index": index});
+      
+    } else {
+      // AQUÍ ESTÁ LA MAGIA: Al tocar la canción normalmente en el buscador, 
+      // pedimos la lista Oficial por ID (radio=false) a tu servidor VPS.
+      printINFO("Iniciando Playlist Oficial por ID para: ${mediaItems[index].title}");
+      await pushSongToQueue(mediaItems[index]);
     }
-    await _audioHandler.customAction("playByIndex", {"index": index});
   }
+
 
   Future<void> startRadio(MediaItem? mediaItem, {String? playlistid}) async {
     radioInitiatorItem = mediaItem ?? playlistid;
