@@ -6,10 +6,7 @@ import 'package:get/get.dart' as getx;
 import 'remote_config_service.dart';
 import '../utils/helper.dart';
 
-enum AudioQuality {
-  Low,
-  High,
-}
+enum AudioQuality { Low, High }
 
 class MusicServices extends getx.GetxService {
   final dio = Dio();
@@ -17,27 +14,21 @@ class MusicServices extends getx.GetxService {
 
   @override
   void onInit() {
-    printINFO("🚀 MusicServices inicializado apuntando a tu servidor central");
+    printINFO("🚀 MusicServices apuntando al servidor central");
     super.onInit();
   }
 
-  set hlCode(String code) {
-    _hlCode = code;
-  }
-
+  set hlCode(String code) => _hlCode = code;
   String get hlCode => _hlCode;
 
-  // --- 1. CARGA DEL INICIO (Se conecta al nuevo /api/home de tu servidor) ---
+  // --- 1. CARGA DEL INICIO ---
   Future<List<dynamic>> getHome({int limit = 4}) async {
     try {
       final response = await dio.get('${RemoteConfigService.baseUrl}/api/home');
-      
       if (response.statusCode == 200 && response.data is List) {
-        final List data = response.data;
-        
-        return data.map((section) {
+        return (response.data as List).map((section) {
           return {
-            'title': section['title'] ?? 'Inicio',
+            'title': section['title'] ?? 'Recomendaciones',
             'contents': (section['contents'] as List).map((item) => MediaItem(
               id: item['videoId'] ?? item['id'] ?? '',
               title: item['title'] ?? 'Sin título',
@@ -47,93 +38,55 @@ class MusicServices extends getx.GetxService {
           };
         }).toList();
       }
-    } catch (e) {
-      printERROR("Error al cargar el inicio: $e");
-    }
+    } catch (e) { printERROR("Error Home: $e"); }
     return [];
   }
 
-  // --- 2. CHARTS ---
-  Future<List<Map<String, dynamic>>> getCharts(String category, {String? countryCode}) async {
-    return [];
-  }
+  Future<List<Map<String, dynamic>>> getCharts(String category, {String? countryCode}) async => [];
 
   // --- 3. CONTENIDO RELACIONADO ---
   Future<dynamic> getContentRelatedToSong(String videoId, String hlCode) async {
-    try {
-      final response = await dio.get(
-        '${RemoteConfigService.baseUrl}/api/next',
-        queryParameters: {'videoId': videoId},
-      );
-      if (response.statusCode == 200 && response.data is List) {
-        final List data = response.data;
-        return data.map((item) => MediaItem(
-          id: item['videoId'] ?? item['id'] ?? '',
-          title: item['title'] ?? 'Sin título',
-          artist: item['artist'] ?? 'Desconocido',
-          artUri: Uri.parse(item['thumbnail'] ?? ''),
-        )).toList();
-      }
-    } catch (e) {
-      printERROR("Error en contenido relacionado: $e");
-    }
-    return [];
+    return (await getWatchPlaylist(videoId: videoId))['tracks'];
   }
 
   // --- 4. BÚSQUEDA ---
-  Future<Map<String, dynamic>> search(String query,
-      {String? filter,
-      String? scope,
-      int limit = 30,
-      bool ignoreSpelling = false,
-      String? filterParams}) async {
+  Future<Map<String, dynamic>> search(String query, {String? filter, String? scope, int limit = 30, bool ignoreSpelling = false, String? filterParams}) async {
     try {
-      final response = await dio.get(
-        '${RemoteConfigService.baseUrl}/api/search',
-        queryParameters: {'q': query},
-      );
-
+      final response = await dio.get('${RemoteConfigService.baseUrl}/api/search', queryParameters: {'q': query});
       if (response.statusCode == 200 && response.data is List) {
-        final List data = response.data;
-        final songs = data.map((item) => MediaItem(
+        return {'Songs': (response.data as List).map((item) => MediaItem(
           id: item['videoId'] ?? item['id'] ?? '',
           title: item['title'] ?? 'Sin título',
           artist: item['artist'] ?? 'Desconocido',
           artUri: Uri.parse(item['thumbnail'] ?? ''),
           extras: {'resultType': 'song'},
-        )).toList();
-
-        return {'Songs': songs};
+        )).toList()};
       }
-    } catch (e) {
-      printERROR("Error en búsqueda del servidor: $e");
-    }
+    } catch (e) {}
     return {};
   }
 
-  // --- 5. COLA DE REPRODUCCIÓN / RADIO ---
-  Future<Map<String, dynamic>> getWatchPlaylist(
-      {String videoId = "",
-      String? playlistId,
-      int limit = 25,
-      bool radio = false,
-      bool shuffle = false,
-      String? additionalParamsNext,
-      bool onlyRelated = false}) async {
+  // --- 5. COLA DE REPRODUCCIÓN / RADIO OPTIMIZADA ---
+  Future<Map<String, dynamic>> getWatchPlaylist({String videoId = "", String? playlistId, int limit = 25, bool radio = false, bool shuffle = false, String? additionalParamsNext, bool onlyRelated = false}) async {
     
-    if (videoId.isNotEmpty && videoId.substring(0, 4) == "MPED") {
-      videoId = videoId.substring(4);
+    // Si no hay videoId pero hay playlistId (modo continuación de radio), lo extraemos
+    String targetId = videoId;
+    if (targetId.isEmpty && playlistId != null) {
+       targetId = playlistId.replaceAll('RDAMVM', '').replaceAll('RD', '');
     }
+    if (targetId.startsWith("MPED")) targetId = targetId.substring(4);
 
     try {
       final response = await dio.get(
         '${RemoteConfigService.baseUrl}/api/next',
-        queryParameters: {'videoId': videoId},
+        queryParameters: {
+          'videoId': targetId,
+          'radio': radio.toString() // Le avisa al servidor que queremos un MIX
+        },
       );
 
       if (response.statusCode == 200 && response.data is List) {
-        final List data = response.data;
-        final tracks = data.map((item) => MediaItem(
+        final tracks = (response.data as List).map((item) => MediaItem(
           id: item['videoId'] ?? item['id'] ?? '',
           title: item['title'] ?? 'Sin título',
           artist: item['artist'] ?? 'Desconocido',
@@ -142,53 +95,27 @@ class MusicServices extends getx.GetxService {
 
         return {
           'tracks': tracks,
-          'playlistId': playlistId ?? 'server_queue',
+          'playlistId': playlistId ?? 'RDAMVM$targetId',
           'lyrics': null,
           'related': null,
           'additionalParamsForNext': null
         };
       }
-    } catch (e) {
-      printERROR("Error al obtener cola del servidor: $e");
-    }
-
-    return {
-      'tracks': [],
-      'playlistId': playlistId,
-      'lyrics': null,
-      'related': null,
-      'additionalParamsForNext': null
-    };
+    } catch (e) { printERROR("Error Playlist: $e"); }
+    return {'tracks': [], 'playlistId': playlistId};
   }
 
-  // --- 6. MÉTODOS REQUERIDOS POR PANTALLAS ---
-  Future<Map<String, dynamic>> getArtistRealtedContent(
-      Map<String, dynamic> browseEndpoint, String category,
-      {String additionalParams = ""}) async {
-    return {"results": [], "additionalParams": ""};
-  }
-
-  Future<Map<String, dynamic>> getSearchContinuation(Map additionalParamsNext,
-      {int limit = 10}) async {
-    return {};
-  }
-
-  // --- 7. MÉTODOS AUXILIARES ---
+  // --- MÉTODOS AUXILIARES ---
+  Future<Map<String, dynamic>> getArtistRealtedContent(Map<String, dynamic> browseEndpoint, String category, {String additionalParams = ""}) async => {"results": [], "additionalParams": ""};
+  Future<Map<String, dynamic>> getSearchContinuation(Map additionalParamsNext, {int limit = 10}) async => {};
   Future<List<String>> getSearchSuggestion(String queryStr) async => [];
-
   Future<List> getSongWithId(String songId) async {
     final list = await getWatchPlaylist(videoId: songId);
     return ((list['tracks'] as List).isNotEmpty) ? [true, list['tracks']] : [false, null];
   }
-
-  Future<Map<String, dynamic>> getArtist(String channelId) async => 
-      {'name': 'Artista', 'description': '', 'thumbnails': []};
-
-  Future<Map<String, dynamic>> getPlaylistOrAlbumSongs({String? playlistId, String? albumId}) async => 
-      {'tracks': [], 'title': 'Playlist'};
-
+  Future<Map<String, dynamic>> getArtist(String channelId) async => {'name': 'Artista', 'description': '', 'thumbnails': []};
+  Future<Map<String, dynamic>> getPlaylistOrAlbumSongs({String? playlistId, String? albumId}) async => {'tracks': [], 'title': 'Playlist'};
   Future<String?> getSongYear(String songId) async => null;
-
   Future<dynamic> getLyrics(String browseId) async => null;
 
   @override
@@ -197,7 +124,4 @@ class MusicServices extends getx.GetxService {
     super.onClose();
   }
 }
-
-class NetworkError extends Error {
-  final message = "Network Error !";
-}
+class NetworkError extends Error { final message = "Network Error !"; }
