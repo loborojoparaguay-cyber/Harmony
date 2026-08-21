@@ -21,6 +21,27 @@ class MusicServices extends getx.GetxService {
   set hlCode(String code) => _hlCode = code;
   String get hlCode => _hlCode;
 
+  // --- FUNCIÓN ANTI-CRASH PARA ARMAR LAS CANCIONES ---
+  MediaItem _buildSafeMediaItem(Map<String, dynamic> item) {
+    String thumb = item['thumbnail'] ?? '';
+    // Si la canción no trae foto, le ponemos una por defecto para que la pantalla no se ponga gris
+    if (thumb.isEmpty) {
+      thumb = 'https://cdn-icons-png.flaticon.com/512/2995/2995105.png'; 
+    }
+    
+    return MediaItem(
+      id: item['videoId'] ?? item['id'] ?? '',
+      title: item['title'] ?? 'Sin título',
+      artist: item['artist'] ?? 'Desconocido',
+      artUri: Uri.tryParse(thumb) ?? Uri.parse('https://cdn-icons-png.flaticon.com/512/2995/2995105.png'),
+      extras: {
+        // AQUÍ ESTABA EL ERROR: Faltaba pasarle el link de audio al reproductor
+        'url': item['url'] ?? '', 
+        'resultType': 'song'
+      },
+    );
+  }
+
   // --- 1. CARGA DEL INICIO ---
   Future<List<dynamic>> getHome({int limit = 4}) async {
     try {
@@ -29,12 +50,7 @@ class MusicServices extends getx.GetxService {
         return (response.data as List).map((section) {
           return {
             'title': section['title'] ?? 'Recomendaciones',
-            'contents': (section['contents'] as List).map((item) => MediaItem(
-              id: item['videoId'] ?? item['id'] ?? '',
-              title: item['title'] ?? 'Sin título',
-              artist: item['artist'] ?? 'Desconocido',
-              artUri: Uri.parse(item['thumbnail'] ?? ''),
-            )).toList(),
+            'contents': (section['contents'] as List).map((item) => _buildSafeMediaItem(item)).toList(),
           };
         }).toList();
       }
@@ -54,22 +70,14 @@ class MusicServices extends getx.GetxService {
     try {
       final response = await dio.get('${RemoteConfigService.baseUrl}/api/search', queryParameters: {'q': query});
       if (response.statusCode == 200 && response.data is List) {
-        return {'Songs': (response.data as List).map((item) => MediaItem(
-          id: item['videoId'] ?? item['id'] ?? '',
-          title: item['title'] ?? 'Sin título',
-          artist: item['artist'] ?? 'Desconocido',
-          artUri: Uri.parse(item['thumbnail'] ?? ''),
-          extras: {'resultType': 'song'},
-        )).toList()};
+        return {'Songs': (response.data as List).map((item) => _buildSafeMediaItem(item)).toList()};
       }
     } catch (e) {}
     return {};
   }
 
-  // --- 5. COLA DE REPRODUCCIÓN / RADIO OPTIMIZADA ---
+  // --- 5. COLA DE REPRODUCCIÓN / RADIO ---
   Future<Map<String, dynamic>> getWatchPlaylist({String videoId = "", String? playlistId, int limit = 25, bool radio = false, bool shuffle = false, String? additionalParamsNext, bool onlyRelated = false}) async {
-    
-    // Si no hay videoId pero hay playlistId (modo continuación de radio), lo extraemos
     String targetId = videoId;
     if (targetId.isEmpty && playlistId != null) {
        targetId = playlistId.replaceAll('RDAMVM', '').replaceAll('RD', '');
@@ -81,17 +89,12 @@ class MusicServices extends getx.GetxService {
         '${RemoteConfigService.baseUrl}/api/next',
         queryParameters: {
           'videoId': targetId,
-          'radio': radio.toString() // Le avisa al servidor que queremos un MIX
+          'radio': radio.toString()
         },
       );
 
       if (response.statusCode == 200 && response.data is List) {
-        final tracks = (response.data as List).map((item) => MediaItem(
-          id: item['videoId'] ?? item['id'] ?? '',
-          title: item['title'] ?? 'Sin título',
-          artist: item['artist'] ?? 'Desconocido',
-          artUri: Uri.parse(item['thumbnail'] ?? ''),
-        )).toList();
+        final tracks = (response.data as List).map((item) => _buildSafeMediaItem(item)).toList();
 
         return {
           'tracks': tracks,
@@ -103,6 +106,17 @@ class MusicServices extends getx.GetxService {
       }
     } catch (e) { printERROR("Error Playlist: $e"); }
     return {'tracks': [], 'playlistId': playlistId};
+  }
+
+  // --- RADIOS EN VIVO ---
+  Future<List<MediaItem>> getLiveRadios() async {
+    try {
+      final response = await dio.get('${RemoteConfigService.baseUrl}/api/radios');
+      if (response.statusCode == 200 && response.data is List) {
+        return (response.data as List).map((item) => _buildSafeMediaItem(item)).toList();
+      }
+    } catch (e) { printERROR("Error al cargar radios: $e"); }
+    return [];
   }
 
   // --- MÉTODOS AUXILIARES ---
@@ -124,4 +138,5 @@ class MusicServices extends getx.GetxService {
     super.onClose();
   }
 }
+
 class NetworkError extends Error { final message = "Network Error !"; }
